@@ -25,18 +25,17 @@ namespace server
 {
 
 // all inserted entires go into the uncached vector
-void SpatialMap::insert(ServerActiveObject* obj)
+void SpatialMap::insert(u16 id)
 {
-	m_uncached.push_back(obj->getId());
+	m_uncached.push_back(id);
 }
 
 // Invalidates upon position update
-void SpatialMap::invalidate(ServerActiveObject* obj)
+void SpatialMap::invalidate(u16 id, v3f &pos)
 {
 	// remove from cache, if present
-	u16 id = obj->getId();
 	bool found = false;
-	auto range = m_cached.equal_range(SpatialKey(obj->getBasePosition()));
+	auto range = m_cached.equal_range(SpatialKey(pos));
 	for (auto it = range.first; it != range.second; ++it) {
 		if (it->second == id) {
 			m_cached.erase(it);
@@ -47,25 +46,24 @@ void SpatialMap::invalidate(ServerActiveObject* obj)
 
 	if(found) {
 		// place back in uncached
-		insert(obj);
+		insert(id);
 	}
 }
 
-void SpatialMap::remove(ServerActiveObject* obj)
+void SpatialMap::remove(u16 id, v3f pos)
 {
-	SpatialKey key(obj->getBasePosition());
-	u16 idToRemove = obj->getId();
+	SpatialKey key(pos);
 	if(m_cached.find(key) != m_cached.end()) {
 		auto range = m_cached.equal_range(key);
 		for (auto it = range.first; it != range.second; ++it) {
-			if (it->second == idToRemove) {
+			if (it->second == id) {
 				m_cached.erase(it);
 				return; // Erase and leave early
 			}
 		}
 	};
 
-	auto it = std::find(m_uncached.begin(), m_uncached.end(), idToRemove);
+	auto it = std::find(m_uncached.begin(), m_uncached.end(), id);
 	if (it != m_uncached.end()) {
 		m_uncached.erase(it);
 		return;

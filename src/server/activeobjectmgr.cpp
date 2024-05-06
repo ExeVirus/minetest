@@ -46,8 +46,15 @@ void ActiveObjectMgr::clearIf(const std::function<bool(ServerActiveObject *, u16
 	}
 }
 
+void ActiveObjectMgr::invalidateCachedObjectID(u16 id, v3f &last_position, bool &position_changed)
+{
+	if(position_changed) {
+		m_spatial_map.invalidate(id, last_position);
+	}
+}
+
 void ActiveObjectMgr::step(
-		float dtime, const std::function<void(ServerActiveObject *)> &f)
+		float dtime, const std::function<void(ServerActiveObject *, v3f &last_position, bool &position_changed)> &f)
 {
 	size_t count = 0;
 
@@ -93,7 +100,7 @@ bool ActiveObjectMgr::registerObject(std::unique_ptr<ServerActiveObject> obj)
 
 	auto obj_id = obj->getId(); 
 	m_active_objects.put(obj_id, std::move(obj));
-	m_spatial_map.insert(obj.get());
+	m_spatial_map.insert(obj_id);
 
 	auto new_size = m_active_objects.size();
 	verbosestream << "Server::ActiveObjectMgr::addActiveObjectRaw(): "
@@ -111,8 +118,8 @@ void ActiveObjectMgr::removeObject(u16 id)
 	verbosestream << "Server::ActiveObjectMgr::removeObject(): "
 			<< "id=" << id << std::endl;
 
-	m_spatial_map.remove(m_active_objects.get(id).get());
-	
+	m_spatial_map.remove(id, m_active_objects.get(id).get()->getBasePosition());
+
 	// this will take the object out of the map and then destruct it
 	bool ok = m_active_objects.remove(id);
 	if (!ok) {

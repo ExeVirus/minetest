@@ -1587,7 +1587,10 @@ void ServerEnvironment::step(float dtime)
 			object_count++;
 
 			// Step object
-			obj->step(dtime, send_recommended);
+			v3f last_position;
+			bool position_changed;
+			obj->step(dtime, send_recommended, last_position, position_changed);
+			m_ao_manager.
 			// Read messages from object
 			obj->dumpAOMessagesToQueue(m_active_object_messages);
 		};

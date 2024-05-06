@@ -45,7 +45,7 @@ public:
 		// destructed.
 	}
 
-	virtual void step(float dtime, const std::function<void(T *)> &f) = 0;
+	virtual void step(float dtime, const std::function<void(T *, v3f& lastPosition, bool &position_changed)> &f) = 0;
 	virtual bool registerObject(std::unique_ptr<T> obj) = 0;
 	virtual void removeObject(u16 id) = 0;
 

@@ -30,16 +30,16 @@ class SpatialMap
 {
 public:
 	// all inserted entires go into the uncached vector
-	void insert(ServerActiveObject* obj);
+	void insert(u16 id);
 	
 	// Invalidates upon position update or removal
-	void invalidate(ServerActiveObject* obj);
+	void invalidate(u16 id, v3f& pos);
 
 	// On active_object removal, remove.
-	void remove(ServerActiveObject* obj);
+	void remove(u16 id, v3f pos);
 
 	// Only when at least 64 uncached objects or 10% uncached overall
-	void cacheUpdate(ActiveObjectMgr& mgr);
+	void cacheUpdate(::server::ActiveObjectMgr &mgr);
 
 	// Use the same basic algorithm for both area and radius lookups
 	void getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relevant_objs);
