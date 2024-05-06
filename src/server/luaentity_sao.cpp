@@ -132,8 +132,9 @@ void LuaEntitySAO::dispatchScriptDeactivate(bool removal)
 		m_env->getScriptIface()->luaentity_Deactivate(m_id, removal);
 }
 
-void LuaEntitySAO::step(float dtime, bool send_recommended, bool &position_changed)
+void LuaEntitySAO::step(float dtime, bool send_recommended, v3f &last_position, bool &position_changed)
 {
+	last_position = m_base_position;
 	if (!m_properties_sent) {
 		m_properties_sent = true;
 		std::string str = getPropertyPacket();
@@ -241,6 +242,7 @@ void LuaEntitySAO::step(float dtime, bool send_recommended, bool &position_chang
 	}
 
 	sendOutdatedData();
+	position_changed = last_position != m_base_position;
 }
 
 std::string LuaEntitySAO::getClientInitializationData(u16 protocol_version)

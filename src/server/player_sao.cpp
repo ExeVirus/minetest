@@ -154,8 +154,9 @@ void PlayerSAO::getStaticData(std::string * result) const
 	FATAL_ERROR("This function shall not be called for PlayerSAO");
 }
 
-void PlayerSAO::step(float dtime, bool send_recommended, bool &position_changed)
+void PlayerSAO::step(float dtime, bool send_recommended, v3f& last_position, bool &position_changed)
 {
+	last_position = m_last_good_position;
 	if (!isImmortal() && m_drowning_interval.step(dtime, 2.0f)) {
 		// Get nose/mouth position, approximate with eye position
 		v3s16 p = floatToInt(getEyePosition(), BS);
@@ -238,7 +239,6 @@ void PlayerSAO::step(float dtime, bool send_recommended, bool &position_changed)
 		warningstream << "PlayerSAO::step() id=" << m_id <<
 			" is attached to nonexistent parent. This is a bug." << std::endl;
 		clearParentAttachment();
-		// FIXHERE
 		setBasePosition(m_last_good_position);
 		m_env->getGameDef()->SendMovePlayer(this);
 	}
@@ -308,6 +308,7 @@ void PlayerSAO::step(float dtime, bool send_recommended, bool &position_changed)
 	}
 
 	sendOutdatedData();
+	position_changed = last_position != m_base_position;
 }
 
 std::string PlayerSAO::generateUpdatePhysicsOverrideCommand() const

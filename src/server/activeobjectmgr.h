@@ -35,9 +35,10 @@ public:
 	// If cb returns true, the obj will be deleted
 	void clearIf(const std::function<bool(ServerActiveObject *, u16)> &cb);
 	void step(float dtime,
-			const std::function<void(ServerActiveObject *)> &f) override;
+			const std::function<void(ServerActiveObject *, v3f &last_position, bool &position_changed)> &f) override;
 	bool registerObject(std::unique_ptr<ServerActiveObject> obj) override;
 	void removeObject(u16 id) override;
+	void invalidateCachedObjectID(u16 id, v3f &last_position, bool &position_changed);
 
 	void getObjectsInsideRadius(const v3f &pos, float radius,
 			std::vector<ServerActiveObject *> &result,
@@ -50,6 +51,7 @@ public:
 			f32 player_radius, const std::set<u16> &current_objects,
 			std::vector<u16> &added_objects);
 
+protected:
 	SpatialMap m_spatial_map;
 };
 } // namespace server
