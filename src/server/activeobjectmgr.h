@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <vector>
 #include "../activeobjectmgr.h"
 #include "serveractiveobject.h"
+#include "spatial_map.h"
 
 namespace server
 {
@@ -48,5 +49,7 @@ public:
 	void getAddedActiveObjectsAroundPos(v3f player_pos, f32 radius,
 			f32 player_radius, const std::set<u16> &current_objects,
 			std::vector<u16> &added_objects);
+
+	SpatialMap m_spatial_map;
 };
 } // namespace server
