@@ -132,7 +132,7 @@ void LuaEntitySAO::dispatchScriptDeactivate(bool removal)
 		m_env->getScriptIface()->luaentity_Deactivate(m_id, removal);
 }
 
-void LuaEntitySAO::step(float dtime, bool send_recommended)
+void LuaEntitySAO::step(float dtime, bool send_recommended, bool &position_changed)
 {
 	if (!m_properties_sent) {
 		m_properties_sent = true;

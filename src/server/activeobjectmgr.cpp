@@ -93,6 +93,7 @@ bool ActiveObjectMgr::registerObject(std::unique_ptr<ServerActiveObject> obj)
 
 	auto obj_id = obj->getId(); 
 	m_active_objects.put(obj_id, std::move(obj));
+	m_spatial_map.insert(obj.get());
 
 	auto new_size = m_active_objects.size();
 	verbosestream << "Server::ActiveObjectMgr::addActiveObjectRaw(): "
@@ -110,6 +111,8 @@ void ActiveObjectMgr::removeObject(u16 id)
 	verbosestream << "Server::ActiveObjectMgr::removeObject(): "
 			<< "id=" << id << std::endl;
 
+	m_spatial_map.remove(m_active_objects.get(id).get());
+	
 	// this will take the object out of the map and then destruct it
 	bool ok = m_active_objects.remove(id);
 	if (!ok) {
