@@ -21,8 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <functional>
 #include <vector>
-#include "serveractiveobject.h"
-#include "activeobjectmgr.h"
+#include "irrlichttypes_bloated.h"
 
 namespace server
 {
@@ -33,13 +32,13 @@ public:
 	void insert(u16 id);
 	
 	// Invalidates upon position update or removal
-	void invalidate(u16 id, v3f& pos);
+	void invalidate(u16 id, v3f &pos);
 
 	// On active_object removal, remove.
 	void remove(u16 id, v3f pos);
 
 	// Only when at least 64 uncached objects or 10% uncached overall
-	void cacheUpdate(::server::ActiveObjectMgr &mgr);
+	void cacheUpdate(const std::function<v3f(u16)> &getPos);
 
 	// Use the same basic algorithm for both area and radius lookups
 	void getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relevant_objs);
@@ -57,9 +56,19 @@ protected:
 			z = _z >> 4;
 		}
 		SpatialKey(v3f _pos) : SpatialKey(_pos.X, _pos.Y, _pos.Z){}
+
+		bool operator==(const SpatialKey& other) const {
+			return (x == other.x && y == other.y && z == other.z);
+		}
 	} SpatialKey;
 
-	std::unordered_multimap<SpatialKey, u16> m_cached;
+	struct SpatialKeyHash {
+		auto operator()(const SpatialKey &key) const -> size_t {
+			return std::hash<size_t>()(*reinterpret_cast<const size_t*>(&key));
+		}
+	};
+
+	std::unordered_multimap<SpatialKey, u16, SpatialKeyHash> m_cached;
 	std::vector<u16> m_uncached;
 };
 } // namespace server

@@ -17,8 +17,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#pragma once
-
 #include "spatial_map.h"
 
 namespace server
@@ -35,7 +33,8 @@ void SpatialMap::invalidate(u16 id, v3f &pos)
 {
 	// remove from cache, if present
 	bool found = false;
-	auto range = m_cached.equal_range(SpatialKey(pos));
+	SpatialKey key(pos);
+	auto range = m_cached.equal_range(key);
 	for (auto it = range.first; it != range.second; ++it) {
 		if (it->second == id) {
 			m_cached.erase(it);
@@ -73,12 +72,11 @@ void SpatialMap::remove(u16 id, v3f pos)
 }
 
 // Only when at least 64 uncached objects or 10% uncached overall
-void SpatialMap::cacheUpdate(ActiveObjectMgr& mgr)
+void SpatialMap::cacheUpdate(const std::function<v3f(u16)> &getPos)
 {
-	bool shouldUpdate = false;
 	if(m_uncached.size() >= 64 || (m_uncached.size() >= 64 && m_uncached.size() * 10 > m_cached.size())) {
 		for(u16& entry : m_uncached) {
-			m_cached.insert(std::pair<SpatialKey,u16>(mgr.getActiveObject(entry)->getBasePosition(), entry));
+			m_cached.insert(std::pair<SpatialKey,u16>(getPos(entry), entry));
 		}
 		m_uncached.clear();
 	}
@@ -104,7 +102,9 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relev
 					SpatialKey key(x,y,z);
 					if (m_cached.find(key) != m_cached.end()) {
 						auto range = m_cached.equal_range(key);
-						relevant_objs.insert(relevant_objs.end(), range.first, range.second);
+						for (auto &it = range.first; it != range.second; ++it) {
+							relevant_objs.push_back(it->second);
+						}
 					}
 				}
 			}
