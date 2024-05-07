@@ -107,7 +107,7 @@ public:
 			same time so that the data can be combined in a single
 			packet.
 	*/
-	virtual void step(float dtime, bool send_recommended, v3f& last_position, bool &position_changed){}
+	virtual void step(float dtime, bool send_recommended){}
 
 	/*
 		The return value of this is passed to the client-side object

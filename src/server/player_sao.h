@@ -87,7 +87,7 @@ public:
 	bool shouldUnload() const override { return false; }
 	std::string getClientInitializationData(u16 protocol_version) override;
 	void getStaticData(std::string *result) const override;
-	void step(float dtime, bool send_recommended, v3f& last_position, bool &position_changed) override;
+	void step(float dtime, bool send_recommended) override;
 	void setBasePosition(v3f position);
 	void setPos(const v3f &pos) override;
 	void addPos(const v3f &added_pos) override;

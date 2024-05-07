@@ -35,10 +35,10 @@ public:
 	// If cb returns true, the obj will be deleted
 	void clearIf(const std::function<bool(ServerActiveObject *, u16)> &cb);
 	void step(float dtime,
-			const std::function<void(ServerActiveObject *, v3f &last_position, bool &position_changed)> &f) override;
+			const std::function<void(ServerActiveObject *)> &f) override;
 	bool registerObject(std::unique_ptr<ServerActiveObject> obj) override;
 	void removeObject(u16 id) override;
-	void invalidateCachedObjectID(u16 id, v3f &last_position, bool &position_changed);
+	void invalidateCachedObjectID(u16 id, v3f &last_position);
 
 	void getObjectsInsideRadius(const v3f &pos, float radius,
 			std::vector<ServerActiveObject *> &result,

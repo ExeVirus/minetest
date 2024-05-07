@@ -46,15 +46,13 @@ void ActiveObjectMgr::clearIf(const std::function<bool(ServerActiveObject *, u16
 	}
 }
 
-void ActiveObjectMgr::invalidateCachedObjectID(u16 id, v3f &last_position, bool &position_changed)
+void ActiveObjectMgr::invalidateCachedObjectID(u16 id, v3f &last_position)
 {
-	if(position_changed) {
-		m_spatial_map.invalidate(id, last_position);
-	}
+	m_spatial_map.invalidate(id, last_position);
 }
 
 void ActiveObjectMgr::step(
-		float dtime, const std::function<void(ServerActiveObject *, v3f &last_position, bool &position_changed)> &f)
+		float dtime, const std::function<void(ServerActiveObject *)> &f)
 {
 	size_t count = 0;
 
@@ -64,6 +62,7 @@ void ActiveObjectMgr::step(
 		count++;
 		f(ao_it.second.get());
 	}
+	m_spatial_map.cacheUpdate([this](u16 id){ return getActiveObject(id)->getBasePosition(); });
 
 	g_profiler->avg("ActiveObjectMgr: SAO count [#]", count);
 }
