@@ -36,6 +36,7 @@ public:
 
 	// On active_object removal, remove.
 	void remove(u16 id, v3f pos);
+	void remove(u16 id);
 
 	// Only when at least 64 uncached objects or 10% uncached overall
 	void cacheUpdate(const std::function<v3f(u16)> &getPos);
