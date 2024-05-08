@@ -49,6 +49,22 @@ void SpatialMap::invalidate(u16 id, v3f &pos)
 	}
 }
 
+void SpatialMap::remove(u16 id)
+{
+	auto found = std::find(m_uncached.begin(), m_uncached.end(), id);
+	if (found != m_uncached.end()) {
+		m_uncached.erase(found);
+		return;
+	}
+	for (auto it = m_cached.begin(); it != m_cached.end();++it) {
+		if(it->second == id) {
+			m_cached.erase(it);
+			break;
+		}
+	}
+	// Error, this shouldn't ever be hit.
+}
+
 void SpatialMap::remove(u16 id, v3f pos)
 {
 	SpatialKey key(pos);

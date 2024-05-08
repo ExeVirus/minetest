@@ -62,7 +62,16 @@ void ActiveObjectMgr::step(
 		count++;
 		f(ao_it.second.get());
 	}
-	m_spatial_map.cacheUpdate([this](u16 id){ return getActiveObject(id)->getBasePosition(); });
+	m_spatial_map.cacheUpdate([this](u16 id)
+	{
+		auto obj = getActiveObject(id);
+		if(obj != nullptr) {
+			return obj->getBasePosition();
+		} else {
+			this->m_spatial_map.remove(id);
+			return v3f();
+		}
+	});
 
 	g_profiler->avg("ActiveObjectMgr: SAO count [#]", count);
 }
