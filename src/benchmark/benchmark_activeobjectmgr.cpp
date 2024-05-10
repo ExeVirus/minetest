@@ -81,6 +81,7 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 		return false;
 	};
 	fill(mgr, N);
+	mgr.step(0,[](ServerActiveObject*){});
 	meter.measure([&] {
 		x = 0;
 		v3f pos = randpos();
@@ -103,9 +104,11 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 	{ benchGetObjectsInArea<_count>(meter); };
 
 TEST_CASE("ActiveObjectMgr") {
-	BENCH_INSIDE_RADIUS(200)
-	BENCH_INSIDE_RADIUS(1450)
+	// BENCH_INSIDE_RADIUS(200)
+	// BENCH_INSIDE_RADIUS(1450)
+	// BENCH_INSIDE_RADIUS(10000)
 
 	BENCH_IN_AREA(200)
 	BENCH_IN_AREA(1450)
+	BENCH_IN_AREA(10000)
 }

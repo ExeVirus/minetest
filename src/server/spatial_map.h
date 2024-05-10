@@ -42,7 +42,7 @@ public:
 	void cacheUpdate(const std::function<v3f(u16)> &getPos);
 
 	// Use the same basic algorithm for both area and radius lookups
-	void getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relevant_objs);
+	void getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback);
 
 protected:
 	typedef struct SpatialKey{
