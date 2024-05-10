@@ -102,15 +102,15 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relev
 {
 	if(!m_cached.empty()) {
 		// when searching, we must round to maximum extent of relevant mapblock indexes
-		auto shrinkRnd = [](f32 val) {
+		auto absoluteRoundUp = [](f32 val) {
 			//return val < 0 ? floor(val) : ceil(val);}
 			s16 rounded = std::lround(val);
 			s16 remainder = (rounded & 0xF) != 0; // same as (val % 16) != 0
-			return (rounded >> 4) + ((rounded < 0) ? -remainder : remainder);
+			return (rounded >> 4) + ((rounded < 0) ? -remainder : remainder); // divide by 16 and round "up" the remainder
 		};
 
-		v3s16 min(shrinkRnd(box.MinEdge.X), shrinkRnd(box.MinEdge.Y), shrinkRnd(box.MinEdge.Z)),
-			max(shrinkRnd(box.MaxEdge.X), shrinkRnd(box.MaxEdge.Y), shrinkRnd(box.MaxEdge.Z));
+		v3s16 min(absoluteRoundUp(box.MinEdge.X), absoluteRoundUp(box.MinEdge.Y), absoluteRoundUp(box.MinEdge.Z)),
+			max(absoluteRoundUp(box.MaxEdge.X), absoluteRoundUp(box.MaxEdge.Y), absoluteRoundUp(box.MaxEdge.Z));
 		
 		for (int x = box.MinEdge.X; x < box.MaxEdge.X;x++) {
 			for (int y = box.MinEdge.Y; y < box.MaxEdge.Y;y++) {
