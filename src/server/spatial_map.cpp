@@ -98,7 +98,7 @@ void SpatialMap::cacheUpdate(const std::function<v3f(u16)> &getPos)
 	}
 }
 
-void SpatialMap::getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relevant_objs)
+void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback)
 {
 	if(!m_cached.empty()) {
 		// when searching, we must round to maximum extent of relevant mapblock indexes
@@ -112,14 +112,15 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relev
 		v3s16 min(absoluteRoundUp(box.MinEdge.X), absoluteRoundUp(box.MinEdge.Y), absoluteRoundUp(box.MinEdge.Z)),
 			max(absoluteRoundUp(box.MaxEdge.X), absoluteRoundUp(box.MaxEdge.Y), absoluteRoundUp(box.MaxEdge.Z));
 		
-		for (int x = box.MinEdge.X; x < box.MaxEdge.X;x++) {
-			for (int y = box.MinEdge.Y; y < box.MaxEdge.Y;y++) {
-				for (int z = box.MinEdge.Z; z < box.MaxEdge.Z;z++) {
+		std::vector<std::unordered_map<SpatialKey, std::vector<u16>, SpatialKeyHash>::iterator> matchingVectors;
+		for (s16 x = min.X; x < max.X;x++) {
+			for (s16 y = min.Y; y < max.Y;y++) {
+				for (s16 z = min.Z; z < max.Z;z++) {
 					SpatialKey key(x,y,z);
 					if (m_cached.find(key) != m_cached.end()) {
 						auto range = m_cached.equal_range(key);
 						for (auto &it = range.first; it != range.second; ++it) {
-							relevant_objs.push_back(it->second);
+							callback(it->second);
 						}
 					}
 				}
@@ -128,7 +129,9 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, std::vector<u16> &relev
 	}
 
 	// add the the rest, uncached objectIDs
-	relevant_objs.insert(relevant_objs.end(), m_uncached.begin(), m_uncached.end());
+	for (auto id : m_uncached) {
+		callback(id);
+	}
 }
 
 } // namespace server

@@ -158,17 +158,17 @@ void ActiveObjectMgr::getObjectsInArea(const aabb3f &box,
 		std::vector<ServerActiveObject *> &result,
 		std::function<bool(ServerActiveObject *obj)> include_obj_cb)
 {
-	for (auto &activeObject : m_active_objects.iter()) {
-		ServerActiveObject *obj = activeObject.second.get();
+	m_spatial_map.getRelevantObjectIds(box,[&](u16 id) {
+		auto obj = m_active_objects.get(id).get();
 		if (!obj)
-			continue;
+			return;
 		const v3f &objectpos = obj->getBasePosition();
 		if (!box.isPointInside(objectpos))
-			continue;
+			return;
 
 		if (!include_obj_cb || include_obj_cb(obj))
 			result.push_back(obj);
-	}
+	});
 }
 
 void ActiveObjectMgr::getAddedActiveObjectsAroundPos(v3f player_pos, f32 radius,
