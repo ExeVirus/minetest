@@ -38,12 +38,8 @@ public:
 			const std::function<void(ServerActiveObject *)> &f) override;
 	bool registerObject(std::unique_ptr<ServerActiveObject> obj) override;
 	void removeObject(u16 id) override;
-	void updateCachedObjectID(u16 id, v3f &last_position, v3f &new_position);
 
 	void getObjectsInsideRadius(const v3f &pos, float radius,
-			std::vector<ServerActiveObject *> &result,
-			std::function<bool(ServerActiveObject *obj)> include_obj_cb);
-	void getObjectsInAreaDumb(const aabb3f &box,
 			std::vector<ServerActiveObject *> &result,
 			std::function<bool(ServerActiveObject *obj)> include_obj_cb);
 	void getObjectsInArea(const aabb3f &box,
@@ -53,7 +49,7 @@ public:
 	void getAddedActiveObjectsAroundPos(v3f player_pos, f32 radius,
 			f32 player_radius, const std::set<u16> &current_objects,
 			std::vector<u16> &added_objects);
-
+protected:
 	SpatialMap m_spatial_map;
 };
 } // namespace server

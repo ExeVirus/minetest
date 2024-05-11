@@ -74,38 +74,22 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 {
 	server::ActiveObjectMgr mgr;
 	size_t x;
-	std::vector<ServerActiveObject*> result, result2;
+	std::vector<ServerActiveObject*> result;
 
 	auto cb = [&x] (ServerActiveObject *obj) -> bool {
 		x += obj->m_static_exists ? 0 : 1;
 		return false;
 	};
 	fill(mgr, N);
-	mgr.m_spatial_map.cacheUpdate([&mgr](u16 id)
-	{
-		auto obj = mgr.getActiveObject(id);
-		if(obj != nullptr) {
-			return obj->getBasePosition();
-		} else {
-			mgr.m_spatial_map.remove(id);
-			return v3f();
-		}
-	});
-	v3f pos, off;
 	meter.measure([&] {
 		x = 0;
-		pos = randpos();
-		off = v3f(50, 50, 50);
+		v3f pos = randpos();
+		v3f off(50, 50, 50);
 		off[myrand_range(0, 2)] = 10;
 		mgr.getObjectsInArea({pos, pos + off}, result, cb);
 		return x;
 	});
 	REQUIRE(result.empty());
-	mgr.getObjectsInAreaDumb({v3f(0,-20,-2000), v3f(2000,60,2000)}, result2, [](ServerActiveObject *obj) { return true; });
-	//mgr.getObjectsInArea({v3f(0,-20,-2000), v3f(2000,60,2000)}, result, [](ServerActiveObject *obj) { return true; });
-
-	std::cout << "numberSmart:" << result.size() << std::endl;
-	std::cout << "numberDumb:" << result2.size() << std::endl;
 
 	mgr.clear(); // implementation expects this
 }
