@@ -43,17 +43,23 @@ public:
 	// Use the same basic algorithm for both area and radius lookups
 	void getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback);
 
-protected:
+//protected:
 	typedef struct SpatialKey{
 		u16 padding{0};
 		s16 x;
 		s16 y;
 		s16 z;
 
-		SpatialKey(s16 _x, s16 _y, s16 _z) {
-			x = _x >> 4;
-			y = _y >> 4;
-			z = _z >> 4;
+		SpatialKey(s16 _x, s16 _y, s16 _z, bool _shrink = true) {
+			if(_shrink) {
+				x = _x >> 4;
+				y = _y >> 4;
+				z = _z >> 4;
+			} else {
+				x = _x;
+				y = _y;
+				z = _z;
+			}
 		}
 		SpatialKey(v3f _pos) : SpatialKey(_pos.X, _pos.Y, _pos.Z){}
 
