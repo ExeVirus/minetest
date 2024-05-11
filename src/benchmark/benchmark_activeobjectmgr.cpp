@@ -81,16 +81,16 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 		return false;
 	};
 	fill(mgr, N);
-	// mgr.m_spatial_map.cacheUpdate([&mgr](u16 id)
-	// {
-	// 	auto obj = mgr.getActiveObject(id);
-	// 	if(obj != nullptr) {
-	// 		return obj->getBasePosition();
-	// 	} else {
-	// 		mgr.m_spatial_map.remove(id);
-	// 		return v3f();
-	// 	}
-	// });
+	mgr.m_spatial_map.cacheUpdate([&mgr](u16 id)
+	{
+		auto obj = mgr.getActiveObject(id);
+		if(obj != nullptr) {
+			return obj->getBasePosition();
+		} else {
+			mgr.m_spatial_map.remove(id);
+			return v3f();
+		}
+	});
 	v3f pos, off;
 	meter.measure([&] {
 		x = 0;
@@ -101,7 +101,9 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 		return x;
 	});
 	REQUIRE(result.empty());
-	mgr.getObjectsInAreaDumb({v3f(-2000,-20,-2000), v3f(2000,60,2000)}, result2, cb);
+	mgr.getObjectsInAreaDumb({v3f(0,-20,-2000), v3f(2000,60,2000)}, result2, [](ServerActiveObject *obj) { return true; });
+	//mgr.getObjectsInArea({v3f(0,-20,-2000), v3f(2000,60,2000)}, result, [](ServerActiveObject *obj) { return true; });
+
 	std::cout << "numberSmart:" << result.size() << std::endl;
 	std::cout << "numberDumb:" << result2.size() << std::endl;
 

@@ -126,7 +126,7 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 		for (s16 x = min.X; x < max.X;x++) {
 			for (s16 y = min.Y; y < max.Y;y++) {
 				for (s16 z = min.Z; z < max.Z;z++) {
-					SpatialKey key(x,y,z);
+					SpatialKey key(x,y,z, false);
 					if (m_cached.find(key) != m_cached.end()) {
 						auto range = m_cached.equal_range(key);
 						for (auto &it = range.first; it != range.second; ++it) {
