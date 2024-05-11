@@ -77,7 +77,7 @@ public:
 		Some simple getters/setters
 	*/
 	v3f getBasePosition() const { return m_base_position; }
-	void setBasePosition(v3f pos){ m_base_position = pos; }
+	void setBasePosition(const v3f &pos);
 	ServerEnvironment* getEnv(){ return m_env; }
 
 	/*
@@ -87,9 +87,9 @@ public:
 	virtual void setPos(const v3f &pos)
 		{ setBasePosition(pos); }
 	virtual void addPos(const v3f &added_pos)
-		{ setBasePosition(m_base_position + added_pos); }
+		{ setBasePosition(getBasePosition() + added_pos); }
 	// continuous: if true, object does not stop immediately at pos
-	virtual void moveTo(v3f pos, bool continuous)
+	virtual void moveTo(const v3f &pos, bool continuous)
 		{ setBasePosition(pos); }
 	// If object has moved less than this and data has not changed,
 	// saving to disk may be omitted

@@ -36,12 +36,16 @@ public:
 	void clearIf(const std::function<bool(ServerActiveObject *, u16)> &cb);
 	void step(float dtime,
 			const std::function<void(ServerActiveObject *)> &f) override;
+
+	void clear();
 	bool registerObject(std::unique_ptr<ServerActiveObject> obj) override;
 	void removeObject(u16 id) override;
+	void updateObjectPosition(u16 id, const v3f &last_position, const v3f &new_position);
 
 	void getObjectsInsideRadius(const v3f &pos, float radius,
 			std::vector<ServerActiveObject *> &result,
 			std::function<bool(ServerActiveObject *obj)> include_obj_cb);
+
 	void getObjectsInArea(const aabb3f &box,
 			std::vector<ServerActiveObject *> &result,
 			std::function<bool(ServerActiveObject *obj)> include_obj_cb);

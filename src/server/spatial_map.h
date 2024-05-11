@@ -28,10 +28,12 @@ namespace server
 class SpatialMap
 {
 public:
-	void insert(u16 id, v3f pos);
-	void remove(u16 id, v3f pos);
-	void remove(u16 id)
-	void updatePosition(u16 id, v3f &oldPos, v3f& newPos);
+	void insert(u16 id, const v3f &pos);
+	void remove(u16 id, const v3f &pos);
+	void remove(u16 id);
+	void removeMapblock(const v3f &mapblockOrigin); // removes all entities at a given mapblock
+	void removeAll();
+	void updatePosition(u16 id, const v3f &oldPos, const v3f &newPos);
 	void getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback);
 
 protected:
@@ -52,9 +54,9 @@ protected:
 				z = _z;
 			}
 		}
-		SpatialKey(v3f _pos) : SpatialKey(_pos.X, _pos.Y, _pos.Z){}
+		SpatialKey(const v3f &_pos) : SpatialKey(_pos.X, _pos.Y, _pos.Z){}
 
-		bool operator==(const SpatialKey& other) const {
+		bool operator==(const SpatialKey &other) const {
 			return (x == other.x && y == other.y && z == other.z);
 		}
 	} SpatialKey;

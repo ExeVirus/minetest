@@ -24,13 +24,13 @@ namespace server
 {
 
 // all inserted entires go into the uncached vector
-void SpatialMap::insert(u16 id, v3f pos)
+void SpatialMap::insert(u16 id, const v3f &pos)
 {
 	m_cached.insert({SpatialKey(pos), id});
 }
 
 // Invalidates upon position update
-void SpatialMap::updatePosition(u16 id, v3f &oldPos, v3f& newPos)
+void SpatialMap::updatePosition(u16 id, const v3f &oldPos, const v3f &newPos)
 {
 	// Try to leave early if already in the same bucket:
 	auto range = m_cached.equal_range(SpatialKey(newPos));
@@ -50,10 +50,10 @@ void SpatialMap::updatePosition(u16 id, v3f &oldPos, v3f& newPos)
 	}
 
 	// place in new bucket
-	m_cached.insert(std::pair<SpatialKey,u16>(newPos, id));
+	insert(id, newPos);
 }
 
-void SpatialMap::remove(u16 id, v3f pos)
+void SpatialMap::remove(u16 id, const v3f &pos)
 {
 	SpatialKey key(pos);
 	if(m_cached.find(key) != m_cached.end()) {
@@ -76,6 +76,16 @@ void SpatialMap::remove(u16 id)
 			return; // Erase and leave early
 		}
 	}
+}
+
+void SpatialMap::removeAll()
+{
+	m_cached.clear();
+}
+
+void SpatialMap::removeMapblock(const v3f &mapblockOrigin)
+{
+	m_cached.erase(SpatialKey(mapblockOrigin));
 }
 
 void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback)
