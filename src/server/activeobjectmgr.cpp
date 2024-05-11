@@ -34,6 +34,12 @@ ActiveObjectMgr::~ActiveObjectMgr()
 	}
 }
 
+void ActiveObjectMgr::clear()
+{
+	::ActiveObjectMgr<ServerActiveObject>::clear();
+	m_spatial_map.removeAll();
+}
+
 void ActiveObjectMgr::clearIf(const std::function<bool(ServerActiveObject *, u16)> &cb)
 {
 	for (auto &it : m_active_objects.iter()) {
@@ -59,6 +65,11 @@ void ActiveObjectMgr::step(
 	}
 
 	g_profiler->avg("ActiveObjectMgr: SAO count [#]", count);
+}
+
+void ActiveObjectMgr::updateObjectPosition(u16 id, const v3f &last_position, const v3f &new_position)
+{
+	m_spatial_map.updatePosition(id, last_position, new_position);
 }
 
 bool ActiveObjectMgr::registerObject(std::unique_ptr<ServerActiveObject> obj)
@@ -93,7 +104,7 @@ bool ActiveObjectMgr::registerObject(std::unique_ptr<ServerActiveObject> obj)
 
 	auto obj_id = obj->getId(); 
 	m_active_objects.put(obj_id, std::move(obj));
-	m_spatial_map.insert(obj_id, obj->getBasePosition());
+	//m_spatial_map.insert(obj_id, obj->getBasePosition());
 
 	auto new_size = m_active_objects.size();
 	verbosestream << "Server::ActiveObjectMgr::addActiveObjectRaw(): "
@@ -175,9 +186,9 @@ void ActiveObjectMgr::getAddedActiveObjectsAroundPos(v3f player_pos, f32 radius,
 		- discard objects that are found in current_objects.
 		- add remaining objects to added_objects
 	*/
-	float r2 = radius * radius;
-	aabb3f bounds(player_pos.X-radius, player_pos.Y-radius, player_pos.Z-radius, 
-			   player_pos.X+radius, player_pos.Y+radius, player_pos.Z+radius);
+	f32 offset = radius > player_radius ? radius : player_radius;
+	aabb3f bounds(player_pos.X-offset, player_pos.Y-offset, player_pos.Z-offset, 
+			   player_pos.X+offset, player_pos.Y+offset, player_pos.Z+offset);
 	m_spatial_map.getRelevantObjectIds(bounds, [&](u16 id) {
 		auto obj = m_active_objects.get(id).get();
 		if (!obj) { // should never be hit

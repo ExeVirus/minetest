@@ -1587,12 +1587,7 @@ void ServerEnvironment::step(float dtime)
 			object_count++;
 
 			// Step object
-			v3f last_position = obj->getBasePosition();
 			obj->step(dtime, send_recommended);
-			v3f new_position = obj->getBasePosition();
-			if(last_position != new_position) {
-				m_ao_manager.updateCachedObjectID(obj->getId(), last_position, new_position);
-			}
 			
 			// Read messages from object
 			obj->dumpAOMessagesToQueue(m_active_object_messages);

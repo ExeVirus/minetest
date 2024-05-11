@@ -48,6 +48,52 @@ inline void fill(server::ActiveObjectMgr &mgr, size_t n)
 }
 
 template <size_t N>
+void benchInsertObjects(Catch::Benchmark::Chronometer &meter)
+{
+	server::ActiveObjectMgr mgr;
+	
+	meter.measure([&] {
+		fill(mgr, N);
+	});
+
+	mgr.clear(); // implementation expects this
+}
+
+template <size_t N>
+void benchRemoveObjects(Catch::Benchmark::Chronometer &meter)
+{
+	server::ActiveObjectMgr mgr;
+	
+	fill(mgr, N);
+	meter.measure([&] {
+		mgr.clear();
+	});
+
+	mgr.clear();
+}
+
+template <size_t N>
+void benchUpdateObjectPositions(Catch::Benchmark::Chronometer &meter)
+{
+	server::ActiveObjectMgr mgr;
+	std::vector<v3f> newPositions;
+	newPositions.reserve(N);
+	
+	fill(mgr, N);
+	for (size_t i = 0; i < N; i++) {
+		newPositions.push_back(randpos());
+	}
+	meter.measure([&] {
+		size_t i = 0;
+		mgr.step(0,[&](ServerActiveObject* obj){
+			mgr.updateObjectPosition(obj->getId(), obj->getBasePosition(), newPositions.at(i));
+			++i;
+		});
+	});
+	mgr.clear();
+}
+
+template <size_t N>
 void benchGetObjectsInsideRadius(Catch::Benchmark::Chronometer &meter)
 {
 	server::ActiveObjectMgr mgr;
@@ -102,10 +148,26 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 	BENCHMARK_ADVANCED("in_area_" #_count)(Catch::Benchmark::Chronometer meter) \
 	{ benchGetObjectsInArea<_count>(meter); };
 
+#define BENCH_INSERT(_count) \
+	BENCHMARK_ADVANCED("insert_objects_" #_count)(Catch::Benchmark::Chronometer meter) \
+	{ benchInsertObjects<_count>(meter); };
+#define BENCH_REMOVE(_count) \
+	BENCHMARK_ADVANCED("remove_objects_" #_count)(Catch::Benchmark::Chronometer meter) \
+	{ benchRemoveObjects<_count>(meter); };
+#define BENCH_UPDATE(_count) \
+	BENCHMARK_ADVANCED("update_objects_" #_count)(Catch::Benchmark::Chronometer meter) \
+	{ benchUpdateObjectPositions<_count>(meter); };
+
 TEST_CASE("ActiveObjectMgr") {
-	// BENCH_INSIDE_RADIUS(200)
-	// BENCH_INSIDE_RADIUS(1450)
-	// BENCH_INSIDE_RADIUS(10000)
+	BENCH_INSERT(10000)
+
+	BENCH_REMOVE(10000)
+	
+	BENCH_UPDATE(10000)
+	
+	BENCH_INSIDE_RADIUS(200)
+	BENCH_INSIDE_RADIUS(1450)
+	BENCH_INSIDE_RADIUS(10000)
 
 	BENCH_IN_AREA(200)
 	BENCH_IN_AREA(1450)
