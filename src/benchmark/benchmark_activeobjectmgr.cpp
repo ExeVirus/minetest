@@ -86,8 +86,7 @@ void benchUpdateObjectPositions(Catch::Benchmark::Chronometer &meter)
 	meter.measure([&] {
 		size_t i = 0;
 		mgr.step(0,[&](ServerActiveObject* obj){
-			mgr.updateObjectPosition(obj->getId(), obj->getBasePosition(), newPositions.at(i));
-			++i;
+			obj->setBasePosition(newPositions.at(i++));
 		});
 	});
 	mgr.clear();
