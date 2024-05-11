@@ -24,9 +24,9 @@ namespace server
 {
 
 // all inserted entires go into the uncached vector
-void SpatialMap::insert(u16 id)
+void SpatialMap::insert(u16 id, v3f pos)
 {
-	m_uncached.push_back(id);
+	m_cached.insert({SpatialKey(pos), id});
 }
 
 // Invalidates upon position update
@@ -40,39 +40,17 @@ void SpatialMap::updatePosition(u16 id, v3f &oldPos, v3f& newPos)
 		}
 	}
 
-	// remove from cache, if present
-	bool found = false;
+	// remove from old cache position
 	range = m_cached.equal_range(SpatialKey(oldPos));
 	for (auto it = range.first; it != range.second; ++it) {
 		if (it->second == id) {
 			m_cached.erase(it);
-			found = true;
 			break; // Erase and leave early
 		}
 	}
 
-	if(!found) {
-		m_uncached.erase(std::find(m_uncached.begin(), m_uncached.end(), id));
-	}
-			
-		// place back in uncached
+	// place in new bucket
 	m_cached.insert(std::pair<SpatialKey,u16>(newPos, id));
-}
-
-void SpatialMap::remove(u16 id)
-{
-	auto found = std::find(m_uncached.begin(), m_uncached.end(), id);
-	if (found != m_uncached.end()) {
-		m_uncached.erase(found);
-		return;
-	}
-	for (auto it = m_cached.begin(); it != m_cached.end();++it) {
-		if(it->second == id) {
-			m_cached.erase(it);
-			break;
-		}
-	}
-	// Error, this shouldn't ever be hit.
 }
 
 void SpatialMap::remove(u16 id, v3f pos)
@@ -86,25 +64,17 @@ void SpatialMap::remove(u16 id, v3f pos)
 				return; // Erase and leave early
 			}
 		}
-	};
-
-	auto it = std::find(m_uncached.begin(), m_uncached.end(), id);
-	if (it != m_uncached.end()) {
-		m_uncached.erase(it);
-		return;
-	} else {
-		// Error, this shouldn't ever be hit.
 	}
+	remove(id); // should never be hit
 }
 
-// Only when at least 64 uncached objects or 10% uncached overall
-void SpatialMap::cacheUpdate(const std::function<v3f(u16)> &getPos)
+void SpatialMap::remove(u16 id)
 {
-	if(m_uncached.size() >= 64 || (m_uncached.size() >= 64 && m_uncached.size() * 10 > m_cached.size())) {
-		for(u16& entry : m_uncached) {
-			m_cached.insert(std::pair<SpatialKey,u16>(getPos(entry), entry));
+	for (auto it = m_cached.begin(); it != m_cached.end(); ++it) {
+		if (it->second == id) {
+			m_cached.erase(it);
+			return; // Erase and leave early
 		}
-		m_uncached.clear();
 	}
 }
 
@@ -136,11 +106,6 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 				}
 			}
 		}
-	}
-
-	// add the the rest, uncached objectIDs
-	for (auto id : m_uncached) {
-		callback(id);
 	}
 }
 

@@ -46,11 +46,6 @@ void ActiveObjectMgr::clearIf(const std::function<bool(ServerActiveObject *, u16
 	}
 }
 
-void ActiveObjectMgr::updateCachedObjectID(u16 id, v3f &last_position, v3f &new_position)
-{
-	m_spatial_map.updatePosition(id, last_position, new_position);
-}
-
 void ActiveObjectMgr::step(
 		float dtime, const std::function<void(ServerActiveObject *)> &f)
 {
@@ -62,16 +57,6 @@ void ActiveObjectMgr::step(
 		count++;
 		f(ao_it.second.get());
 	}
-	m_spatial_map.cacheUpdate([this](u16 id)
-	{
-		auto obj = getActiveObject(id);
-		if(obj != nullptr) {
-			return obj->getBasePosition();
-		} else {
-			this->m_spatial_map.remove(id);
-			return v3f();
-		}
-	});
 
 	g_profiler->avg("ActiveObjectMgr: SAO count [#]", count);
 }
@@ -108,7 +93,7 @@ bool ActiveObjectMgr::registerObject(std::unique_ptr<ServerActiveObject> obj)
 
 	auto obj_id = obj->getId(); 
 	m_active_objects.put(obj_id, std::move(obj));
-	m_spatial_map.insert(obj_id);
+	m_spatial_map.insert(obj_id, obj->getBasePosition());
 
 	auto new_size = m_active_objects.size();
 	verbosestream << "Server::ActiveObjectMgr::addActiveObjectRaw(): "
@@ -141,34 +126,22 @@ void ActiveObjectMgr::getObjectsInsideRadius(const v3f &pos, float radius,
 		std::function<bool(ServerActiveObject *obj)> include_obj_cb)
 {
 	float r2 = radius * radius;
-	for (auto &activeObject : m_active_objects.iter()) {
-		ServerActiveObject *obj = activeObject.second.get();
-		if (!obj)
-			continue;
+	aabb3f bounds(pos.X-radius, pos.Y-radius, pos.Z-radius, 
+			   pos.X+radius, pos.Y+radius, pos.Z+radius);
+
+	m_spatial_map.getRelevantObjectIds(bounds, [&](u16 id) {
+		auto obj = m_active_objects.get(id).get();
+		if (!obj) { // should never be hit
+			m_spatial_map.remove(id);
+			return;
+		}
 		const v3f &objectpos = obj->getBasePosition();
 		if (objectpos.getDistanceFromSQ(pos) > r2)
-			continue;
-
-		if (!include_obj_cb || include_obj_cb(obj))
-			result.push_back(obj);
-	}
-}
-
-void ActiveObjectMgr::getObjectsInAreaDumb(const aabb3f &box,
-		std::vector<ServerActiveObject *> &result,
-		std::function<bool(ServerActiveObject *obj)> include_obj_cb)
-{
-	for (auto &activeObject : m_active_objects.iter()) {
-		ServerActiveObject *obj = activeObject.second.get();
-		if (!obj)
-			return;
-		const v3f &objectpos = obj->getBasePosition();
-		if (!box.isPointInside(objectpos))
 			return;
 
 		if (!include_obj_cb || include_obj_cb(obj))
 			result.push_back(obj);
-	};
+	});
 }
 
 void ActiveObjectMgr::getObjectsInArea(const aabb3f &box,
@@ -177,8 +150,11 @@ void ActiveObjectMgr::getObjectsInArea(const aabb3f &box,
 {
 	m_spatial_map.getRelevantObjectIds(box,[&](u16 id) {
 		auto obj = m_active_objects.get(id).get();
-		if (!obj)
+		if (!obj) { // should never be hit
+			m_spatial_map.remove(id);
 			return;
+		}
+
 		const v3f &objectpos = obj->getBasePosition();
 		if (!box.isPointInside(objectpos))
 			return;
@@ -199,32 +175,35 @@ void ActiveObjectMgr::getAddedActiveObjectsAroundPos(v3f player_pos, f32 radius,
 		- discard objects that are found in current_objects.
 		- add remaining objects to added_objects
 	*/
-	for (auto &ao_it : m_active_objects.iter()) {
-		u16 id = ao_it.first;
-
-		// Get object
-		ServerActiveObject *object = ao_it.second.get();
-		if (!object)
-			continue;
-
-		if (object->isGone())
-			continue;
-
-		f32 distance_f = object->getBasePosition().getDistanceFrom(player_pos);
-		if (object->getType() == ACTIVEOBJECT_TYPE_PLAYER) {
+	float r2 = radius * radius;
+	aabb3f bounds(player_pos.X-radius, player_pos.Y-radius, player_pos.Z-radius, 
+			   player_pos.X+radius, player_pos.Y+radius, player_pos.Z+radius);
+	m_spatial_map.getRelevantObjectIds(bounds, [&](u16 id) {
+		auto obj = m_active_objects.get(id).get();
+		if (!obj) { // should never be hit
+			m_spatial_map.remove(id);
+			return;
+		}
+		if (obj->isGone()) {
+			return;
+		}
+		
+		f32 distance_f = obj->getBasePosition().getDistanceFrom(player_pos);
+		if (obj->getType() == ACTIVEOBJECT_TYPE_PLAYER) {
 			// Discard if too far
 			if (distance_f > player_radius && player_radius != 0)
-				continue;
+				return;
 		} else if (distance_f > radius)
-			continue;
+			return;
 
 		// Discard if already on current_objects
 		auto n = current_objects.find(id);
 		if (n != current_objects.end())
-			continue;
+			return;
+
 		// Add to added_objects
 		added_objects.push_back(id);
-	}
+	});
 }
 
 } // namespace server

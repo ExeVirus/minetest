@@ -28,22 +28,13 @@ namespace server
 class SpatialMap
 {
 public:
-	// all inserted entires go into the uncached vector
-	void insert(u16 id);
-	
-	void updatePosition(u16 id, v3f &oldPos, v3f& newPos);
-
-	// On active_object removal, remove.
+	void insert(u16 id, v3f pos);
 	void remove(u16 id, v3f pos);
-	void remove(u16 id);
-
-	// Only when at least 64 uncached objects or 10% uncached overall
-	void cacheUpdate(const std::function<v3f(u16)> &getPos);
-
-	// Use the same basic algorithm for both area and radius lookups
+	void remove(u16 id)
+	void updatePosition(u16 id, v3f &oldPos, v3f& newPos);
 	void getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback);
 
-//protected:
+protected:
 	typedef struct SpatialKey{
 		u16 padding{0};
 		s16 x;
@@ -75,6 +66,5 @@ public:
 	};
 
 	std::unordered_multimap<SpatialKey, u16, SpatialKeyHash> m_cached;
-	std::vector<u16> m_uncached;
 };
 } // namespace server
