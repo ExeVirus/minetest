@@ -46,9 +46,9 @@ void ActiveObjectMgr::clearIf(const std::function<bool(ServerActiveObject *, u16
 	}
 }
 
-void ActiveObjectMgr::invalidateCachedObjectID(u16 id, v3f &last_position)
+void ActiveObjectMgr::updateCachedObjectID(u16 id, v3f &last_position, v3f &new_position)
 {
-	m_spatial_map.invalidate(id, last_position);
+	m_spatial_map.updatePosition(id, last_position, new_position);
 }
 
 void ActiveObjectMgr::step(
@@ -152,6 +152,23 @@ void ActiveObjectMgr::getObjectsInsideRadius(const v3f &pos, float radius,
 		if (!include_obj_cb || include_obj_cb(obj))
 			result.push_back(obj);
 	}
+}
+
+void ActiveObjectMgr::getObjectsInAreaDumb(const aabb3f &box,
+		std::vector<ServerActiveObject *> &result,
+		std::function<bool(ServerActiveObject *obj)> include_obj_cb)
+{
+	for (auto &activeObject : m_active_objects.iter()) {
+		ServerActiveObject *obj = activeObject.second.get();
+		if (!obj)
+			return;
+		const v3f &objectpos = obj->getBasePosition();
+		if (!box.isPointInside(objectpos))
+			return;
+
+		if (!include_obj_cb || include_obj_cb(obj))
+			result.push_back(obj);
+	};
 }
 
 void ActiveObjectMgr::getObjectsInArea(const aabb3f &box,

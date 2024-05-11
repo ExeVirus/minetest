@@ -1589,8 +1589,9 @@ void ServerEnvironment::step(float dtime)
 			// Step object
 			v3f last_position = obj->getBasePosition();
 			obj->step(dtime, send_recommended);
-			if(last_position != obj->getBasePosition()) {
-				m_ao_manager.invalidateCachedObjectID(obj->getId(), last_position);
+			v3f new_position = obj->getBasePosition();
+			if(last_position != new_position) {
+				m_ao_manager.updateCachedObjectID(obj->getId(), last_position, new_position);
 			}
 			
 			// Read messages from object
