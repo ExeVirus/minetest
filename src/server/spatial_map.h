@@ -31,8 +31,7 @@ public:
 	// all inserted entires go into the uncached vector
 	void insert(u16 id);
 	
-	// Invalidates upon position update or removal
-	void invalidate(u16 id, v3f &pos);
+	void updatePosition(u16 id, v3f &oldPos, v3f& newPos);
 
 	// On active_object removal, remove.
 	void remove(u16 id, v3f pos);

@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "spatial_map.h"
+#include <algorithm>
 
 namespace server
 {
@@ -29,12 +30,19 @@ void SpatialMap::insert(u16 id)
 }
 
 // Invalidates upon position update
-void SpatialMap::invalidate(u16 id, v3f &pos)
+void SpatialMap::updatePosition(u16 id, v3f &oldPos, v3f& newPos)
 {
+	// Try to leave early if already in the same bucket:
+	auto range = m_cached.equal_range(SpatialKey(newPos));
+	for (auto it = range.first; it != range.second; ++it) {
+		if (it->second == id) {
+			return; // all good, let's get out of here
+		}
+	}
+
 	// remove from cache, if present
 	bool found = false;
-	SpatialKey key(pos);
-	auto range = m_cached.equal_range(key);
+	range = m_cached.equal_range(SpatialKey(oldPos));
 	for (auto it = range.first; it != range.second; ++it) {
 		if (it->second == id) {
 			m_cached.erase(it);
@@ -43,10 +51,12 @@ void SpatialMap::invalidate(u16 id, v3f &pos)
 		}
 	}
 
-	if(found) {
-		// place back in uncached
-		insert(id);
+	if(!found) {
+		m_uncached.erase(std::find(m_uncached.begin(), m_uncached.end(), id));
 	}
+			
+		// place back in uncached
+	m_cached.insert(std::pair<SpatialKey,u16>(newPos, id));
 }
 
 void SpatialMap::remove(u16 id)
@@ -105,7 +115,7 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 		auto absoluteRoundUp = [](f32 val) {
 			//return val < 0 ? floor(val) : ceil(val);}
 			s16 rounded = std::lround(val);
-			s16 remainder = (rounded & 0xF) != 0; // same as (val % 16) != 0
+			s16 remainder = (rounded & 0xF) != 0; // same as (val % 8) != 0
 			return (rounded >> 4) + ((rounded < 0) ? -remainder : remainder); // divide by 16 and round "up" the remainder
 		};
 
