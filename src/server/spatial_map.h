@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <functional>
 #include <vector>
+#include <unordered_set>
 #include "irrlichttypes_bloated.h"
 
 namespace server
@@ -31,14 +32,14 @@ public:
 	void insert(u16 id, const v3f &pos);
 	void remove(u16 id, const v3f &pos);
 	void remove(u16 id);
-	void removeMapblock(const v3f &mapblockOrigin); // removes all entities at a given mapblock
 	void removeAll();
 	void updatePosition(u16 id, const v3f &oldPos, const v3f &newPos);
 	void getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback);
+	void handleInsertsAndDeletes();
 
 protected:
-	typedef struct SpatialKey{
-		u16 padding{0};
+	typedef struct SpatialKey {
+		u16 padding_or_optional_id{0};
 		s16 x;
 		s16 y;
 		s16 z;
@@ -55,6 +56,11 @@ protected:
 			}
 		}
 		SpatialKey(const v3f &_pos) : SpatialKey(_pos.X, _pos.Y, _pos.Z){}
+		// The following use case is for storing pending insertions and deletions while iterating
+		// using the extra 16 bit padding makes keeping track of them super efficient for hashing.
+		SpatialKey(const v3f &_pos, const u16 id) : SpatialKey(_pos.X, _pos.Y, _pos.Z, false){
+			padding_or_optional_id = id;
+		}
 
 		bool operator==(const SpatialKey &other) const {
 			return (x == other.x && y == other.y && z == other.z);
@@ -68,5 +74,9 @@ protected:
 	};
 
 	std::unordered_multimap<SpatialKey, u16, SpatialKeyHash> m_cached;
+	std::unordered_set<SpatialKey, SpatialKeyHash> m_pending_inserts;
+	std::unordered_set<SpatialKey, SpatialKeyHash> m_pending_deletes;
+	bool m_remove_all{false};
+	u64 m_iterators_stopping_insertion_and_deletion{0};
 };
 } // namespace server

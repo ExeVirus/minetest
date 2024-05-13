@@ -26,7 +26,11 @@ namespace server
 // all inserted entires go into the uncached vector
 void SpatialMap::insert(u16 id, const v3f &pos)
 {
-	m_cached.insert({SpatialKey(pos), id});
+	if(!m_iterators_stopping_insertion_and_deletion) {
+		m_cached.insert({SpatialKey(pos), id});
+	} else {
+		m_pending_inserts.insert(SpatialKey(pos,id));
+	}
 }
 
 // Invalidates upon position update
@@ -40,52 +44,51 @@ void SpatialMap::updatePosition(u16 id, const v3f &oldPos, const v3f &newPos)
 		}
 	}
 
-	// remove from old cache position
-	range = m_cached.equal_range(SpatialKey(oldPos));
-	for (auto it = range.first; it != range.second; ++it) {
-		if (it->second == id) {
-			m_cached.erase(it);
-			break; // Erase and leave early
-		}
-	}
-
-	// place in new bucket
-	insert(id, newPos);
+	remove(id, oldPos); // remove from old cache position
+	insert(id, newPos); // reinsert
 }
 
 void SpatialMap::remove(u16 id, const v3f &pos)
 {
-	SpatialKey key(pos);
-	if(m_cached.find(key) != m_cached.end()) {
-		auto range = m_cached.equal_range(key);
-		for (auto it = range.first; it != range.second; ++it) {
-			if (it->second == id) {
-				m_cached.erase(it);
-				return; // Erase and leave early
+	if(!m_iterators_stopping_insertion_and_deletion) {
+		SpatialKey key(pos);
+		if(m_cached.find(key) != m_cached.end()) {
+			auto range = m_cached.equal_range(key);
+			for (auto it = range.first; it != range.second; ++it) {
+				if (it->second == id) {
+					m_cached.erase(it);
+					return; // Erase and leave early
+				}
 			}
 		}
+	} else {
+		m_pending_deletes.insert(SpatialKey(pos, id));
+		return;
 	}
 	remove(id); // should never be hit
 }
 
 void SpatialMap::remove(u16 id)
 {
-	for (auto it = m_cached.begin(); it != m_cached.end(); ++it) {
-		if (it->second == id) {
-			m_cached.erase(it);
-			return; // Erase and leave early
+	if(!m_iterators_stopping_insertion_and_deletion) {
+		for (auto it = m_cached.begin(); it != m_cached.end(); ++it) {
+			if (it->second == id) {
+				m_cached.erase(it);
+				break; // Erase and leave early
+			}
 		}
+	} else {
+		m_pending_deletes.insert(SpatialKey(v3f(), id));
 	}
 }
 
 void SpatialMap::removeAll()
 {
-	m_cached.clear();
-}
-
-void SpatialMap::removeMapblock(const v3f &mapblockOrigin)
-{
-	m_cached.erase(SpatialKey(mapblockOrigin));
+	if(!m_iterators_stopping_insertion_and_deletion) {
+		m_cached.clear();
+	} else {
+		m_remove_all = true;
+	}
 }
 
 void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback)
@@ -113,19 +116,44 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 					for (s16 z = min.Z; z < max.Z;z++) {
 						SpatialKey key(x,y,z, false);
 						if (m_cached.find(key) != m_cached.end()) {
+							m_iterators_stopping_insertion_and_deletion++;
 							auto range = m_cached.equal_range(key);
 							for (auto &it = range.first; it != range.second; ++it) {
 								callback(it->second);
 							}
+							m_iterators_stopping_insertion_and_deletion--;
+							handleInsertsAndDeletes();
 						}
 					}
 				}
 			}
 		} else { // let's just iterate, it'll be faster
+			m_iterators_stopping_insertion_and_deletion++;
 			for (auto it = m_cached.begin(); it != m_cached.end(); ++it) {
 				callback(it->second);
 			}
+			m_iterators_stopping_insertion_and_deletion--;
+			handleInsertsAndDeletes();
 		}
+	}
+}
+
+void SpatialMap::handleInsertsAndDeletes()
+{
+	if(!m_iterators_stopping_insertion_and_deletion) {
+		if(!m_remove_all) {
+			for (auto key : m_pending_deletes) {
+				remove(key.padding_or_optional_id, v3f(key.x, key.y, key.z));
+			}
+			for (auto key : m_pending_inserts) {
+				insert(key.padding_or_optional_id, v3f(key.x, key.y, key.z));
+			}
+		} else {
+			m_cached.clear();
+			m_remove_all = false;
+		}
+		m_pending_inserts.clear();
+		m_pending_deletes.clear();
 	}
 }
 
