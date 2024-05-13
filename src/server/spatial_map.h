@@ -1,6 +1,6 @@
 /*
 Minetest
-Copyright (C) 2010-2018 nerzhul, Loic BLOT <loic.blot@unix-experience.fr>
+Copyright (C) 2024, ExeVirus <nodecastmt@gmail.com>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -38,7 +38,7 @@ public:
 	void handleInsertsAndDeletes();
 
 protected:
-	typedef struct SpatialKey {
+	struct SpatialKey {
 		u16 padding_or_optional_id{0};
 		s16 x;
 		s16 y;
@@ -65,7 +65,7 @@ protected:
 		bool operator==(const SpatialKey &other) const {
 			return (x == other.x && y == other.y && z == other.z);
 		}
-	} SpatialKey;
+	};
 
 	struct SpatialKeyHash {
 		auto operator()(const SpatialKey &key) const -> size_t {
