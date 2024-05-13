@@ -1,6 +1,6 @@
 /*
 Minetest
-Copyright (C) 2010-2018 nerzhul, Loic BLOT <loic.blot@unix-experience.fr>
+Copyright (C) 2024, ExeVirus <nodecastmt@gmail.com>
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
