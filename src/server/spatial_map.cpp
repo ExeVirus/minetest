@@ -95,25 +95,35 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 		auto absoluteRoundUp = [](f32 val) {
 			//return val < 0 ? floor(val) : ceil(val);}
 			s16 rounded = std::lround(val);
-			s16 remainder = (rounded & 0xF) != 0; // same as (val % 8) != 0
+			s16 remainder = (rounded & 0xF) != 0; // same as (val % 16) != 0
 			return (rounded >> 4) + ((rounded < 0) ? -remainder : remainder); // divide by 16 and round "up" the remainder
 		};
 
 		v3s16 min(absoluteRoundUp(box.MinEdge.X), absoluteRoundUp(box.MinEdge.Y), absoluteRoundUp(box.MinEdge.Z)),
 			max(absoluteRoundUp(box.MaxEdge.X), absoluteRoundUp(box.MaxEdge.Y), absoluteRoundUp(box.MaxEdge.Z));
 		
-		std::vector<std::unordered_map<SpatialKey, std::vector<u16>, SpatialKeyHash>::iterator> matchingVectors;
-		for (s16 x = min.X; x < max.X;x++) {
-			for (s16 y = min.Y; y < max.Y;y++) {
-				for (s16 z = min.Z; z < max.Z;z++) {
-					SpatialKey key(x,y,z, false);
-					if (m_cached.find(key) != m_cached.end()) {
-						auto range = m_cached.equal_range(key);
-						for (auto &it = range.first; it != range.second; ++it) {
-							callback(it->second);
+		// We should only iterate using this spatial map when there are at least 1 objects per mapblocks to check.
+		// Otherwise, might as well just iterate.
+
+		v3s16 diff = max - min;
+		uint64_t number_of_mapblocks_to_check = std::abs(diff.X) * std::abs(diff.Y) * std::abs(diff.Z);
+		if(number_of_mapblocks_to_check <= m_cached.size()) { // might be worth it
+			for (s16 x = min.X; x < max.X;x++) {
+				for (s16 y = min.Y; y < max.Y;y++) {
+					for (s16 z = min.Z; z < max.Z;z++) {
+						SpatialKey key(x,y,z, false);
+						if (m_cached.find(key) != m_cached.end()) {
+							auto range = m_cached.equal_range(key);
+							for (auto &it = range.first; it != range.second; ++it) {
+								callback(it->second);
+							}
 						}
 					}
 				}
+			}
+		} else { // let's just iterate, it'll be faster
+			for (auto it = m_cached.begin(); it != m_cached.end(); ++it) {
+				callback(it->second);
 			}
 		}
 	}
