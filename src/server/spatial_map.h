@@ -35,6 +35,8 @@ public:
 	void removeAll();
 	void updatePosition(u16 id, const v3f &oldPos, const v3f &newPos);
 	void getRelevantObjectIds(const aabb3f &box, const std::function<void(u16 id)> &callback);
+	void getObjectsIdsInRadius(const v3f &pos, float radius, const std::function<void(u16 id)> &needsCheckedCallback,
+	const std::function<void(u16 id)>  &guarunteedCallback);
 	void handleInsertsAndDeletes();
 
 protected:

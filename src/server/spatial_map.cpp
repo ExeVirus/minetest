@@ -138,6 +138,101 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 	}
 }
 
+
+void SpatialMap::getObjectsIdsInRadius(const v3f &pos, float radius, const std::function<void(u16 id)> &needsCheckedCallback,
+		const std::function<void(u16 id)>  &guarunteedCallback)
+{
+	if(!m_cached.empty()) {
+		float r2 = radius * radius;
+
+		// when searching, we must round to maximum extent of relevant mapblock indexes
+		auto absoluteRoundUp = [](f32 val) -> s16 {
+			//return val < 0 ? floor(val) : ceil(val);}
+			s16 rounded = std::lround(val);
+			s16 remainder = (rounded & 0xF) != 0; // same as (val % 16) != 0
+			return (rounded >> 4) + ((rounded < 0) ? -remainder : remainder); // divide by 16 and round "up" the remainder
+		};
+
+		v3s16 min(absoluteRoundUp(pos.X-radius), absoluteRoundUp(pos.Y-radius), absoluteRoundUp(pos.Z-radius)),
+			max(absoluteRoundUp(pos.X+radius), absoluteRoundUp(pos.Y+radius), absoluteRoundUp(pos.Z+radius));
+		
+		// We should only iterate using this spatial map when there are at least 1 objects per mapblocks to check.
+		// Otherwise, might as well just iterate.
+
+		v3s16 diff = max - min;
+		uint64_t number_of_mapblocks_to_check = std::abs(diff.X) * std::abs(diff.Y) * std::abs(diff.Z);
+		if(number_of_mapblocks_to_check <= m_cached.size() + 100) { // might be worth it
+			for (s16 x = min.X; x < max.X;x++) {
+				// search only mapblocks inside/intersecting the sphere, only matters for radius's larger than ~60 or so
+				s16 startY = min.Y;
+				s16 startZ = min.Z;
+				s16 endY   = max.Y;
+				s16 endZ   = max.Z;
+				// grab a unit circle and figure out this one:
+				if(radius > 60) {
+					float offset = std::sqrt(r2-std::abs(pos.X - (x << 4)));
+					startY = absoluteRoundUp(pos.Y - offset);
+					endY = absoluteRoundUp(pos.Y + offset);
+					startZ = absoluteRoundUp(pos.Z - offset);
+					endZ = absoluteRoundUp(pos.Z + offset);
+				}
+				for (s16 y = startY; y < endY;y++) {
+					for (s16 z = startZ; z < endZ;z++) {
+						SpatialKey key(x,y,z, false);
+						if (m_cached.find(key) != m_cached.end()) {
+							size_t number_of_entities_in_bucket = m_cached.bucket_size(m_cached.bucket(key));
+							if(number_of_entities_in_bucket > 0) {
+								m_iterators_stopping_insertion_and_deletion++;
+								if(number_of_entities_in_bucket > 3) { // let's search by bucket, might get lucky
+									// find the kind of intersection, if any:
+									float distance_min = 0;
+									float distance_max = 0;
+									v3f min_point(x, y, z);
+									v3f max_point(x + 16, y + 16, z + 16);
+									for(int i = 0; i < 3; i++ ) {
+										float a = std::pow(pos[i] - min_point[i],2);
+										float b = std::pow(pos[i] - max_point[i],2);
+										distance_max += std::max(a, b);
+										if( pos[i] < min_point[i] ) distance_min += a; else
+										if( pos[i] > max_point[i] ) distance_min += b;
+									}
+									if (distance_min <= r2) { // at least intersected, if not, ignore all of them, woohoo!
+										if (distance_max <= r2) { // everything is inside the radius, woohoo!
+											auto range = m_cached.equal_range(key);
+											for (auto &it = range.first; it != range.second; ++it) {
+												guarunteedCallback(it->second);
+											}
+										} else { // just an intersection, oh well
+											auto range = m_cached.equal_range(key);
+											for (auto &it = range.first; it != range.second; ++it) {
+												needsCheckedCallback(it->second);
+											}
+										}
+									}
+								} else { // not worth checking the bucket first
+									auto range = m_cached.equal_range(key);
+									for (auto &it = range.first; it != range.second; ++it) {
+										needsCheckedCallback(it->second);
+									}
+								}
+								m_iterators_stopping_insertion_and_deletion--;
+								handleInsertsAndDeletes();
+							}
+						}
+					}
+				}
+			}
+		} else { // let's just iterate, it'll be faster
+			m_iterators_stopping_insertion_and_deletion++;
+			for (auto it = m_cached.begin(); it != m_cached.end(); ++it) {
+				needsCheckedCallback(it->second);
+			}
+			m_iterators_stopping_insertion_and_deletion--;
+			handleInsertsAndDeletes();
+		}
+	}
+}
+
 void SpatialMap::handleInsertsAndDeletes()
 {
 	if(!m_iterators_stopping_insertion_and_deletion) {

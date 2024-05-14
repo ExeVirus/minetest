@@ -137,22 +137,30 @@ void ActiveObjectMgr::getObjectsInsideRadius(const v3f &pos, float radius,
 		std::function<bool(ServerActiveObject *obj)> include_obj_cb)
 {
 	float r2 = radius * radius;
-	aabb3f bounds(pos.X-radius, pos.Y-radius, pos.Z-radius, 
-			   pos.X+radius, pos.Y+radius, pos.Z+radius);
 
-	m_spatial_map.getRelevantObjectIds(bounds, [&](u16 id) {
-		auto obj = m_active_objects.get(id).get();
-		if (!obj) { // should never be hit
-			m_spatial_map.remove(id);
-			return;
-		}
-		const v3f &objectpos = obj->getBasePosition();
-		if (objectpos.getDistanceFromSQ(pos) > r2)
-			return;
+	m_spatial_map.getObjectsIdsInRadius(pos, radius,
+		[&](u16 id) { // needs checked callback
+			auto obj = m_active_objects.get(id).get();
+			if (!obj) { // should never be hit
+				m_spatial_map.remove(id);
+				return;
+			}
+			const v3f &objectpos = obj->getBasePosition();
+			if (objectpos.getDistanceFromSQ(pos) > r2)
+				return;
 
-		if (!include_obj_cb || include_obj_cb(obj))
-			result.push_back(obj);
-	});
+			if (!include_obj_cb || include_obj_cb(obj))
+				result.push_back(obj);
+		},
+		[&](u16 id) { // group fully inside the radius, no further checks
+			auto obj = m_active_objects.get(id).get();
+			if (!obj) { // should never be hit
+				m_spatial_map.remove(id);
+				return;
+			}
+			if (!include_obj_cb || include_obj_cb(obj))
+				result.push_back(obj);
+		});
 }
 
 void ActiveObjectMgr::getObjectsInArea(const aabb3f &box,
