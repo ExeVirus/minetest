@@ -33,9 +33,8 @@ ServerActiveObject::ServerActiveObject(ServerEnvironment *env, v3f pos):
 }
 
 void ServerActiveObject::setBasePosition(const v3f &pos) {
-	if( getEnv() != nullptr) {
+	if(getEnv())
 		getEnv()->updateObjectPosition(getId(), m_base_position, pos);
-	}
 	m_base_position = pos;
 }
 

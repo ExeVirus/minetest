@@ -102,7 +102,7 @@ bool ActiveObjectMgr::registerObject(std::unique_ptr<ServerActiveObject> obj)
 		return false;
 	}
 
-	auto obj_id = obj->getId(); 
+	auto obj_id = obj->getId();
 	m_spatial_map.insert(obj_id, obj->getBasePosition());
 	m_active_objects.put(obj_id, std::move(obj));
 

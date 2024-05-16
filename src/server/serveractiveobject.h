@@ -244,7 +244,6 @@ protected:
 	virtual void onDetach(int parent_id) {}
 
 	ServerEnvironment *m_env;
-	v3f m_base_position;
 	std::unordered_set<u32> m_attached_particle_spawners;
 
 	/*
@@ -272,4 +271,6 @@ protected:
 		Queue of messages to be sent to the client
 	*/
 	std::queue<ActiveObjectMessage> m_messages_out;
+private:
+	v3f m_base_position; // setBasePosition updates index and MUST be called
 };

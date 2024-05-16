@@ -23,6 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <vector>
 #include <unordered_set>
 #include "irrlichttypes_bloated.h"
+#include "constants.h"
 
 namespace server
 {
@@ -55,10 +56,10 @@ protected:
 				z = _z;
 			}
 		}
-		SpatialKey(const v3f &_pos) : SpatialKey(_pos.X, _pos.Y, _pos.Z){}
+		SpatialKey(const v3f &_pos) : SpatialKey(_pos.X / BS, _pos.Y / BS, _pos.Z / BS){}
 		// The following use case is for storing pending insertions and deletions while iterating
 		// using the extra 16 bit padding makes keeping track of them super efficient for hashing.
-		SpatialKey(const v3f &_pos, const u16 id) : SpatialKey(_pos.X, _pos.Y, _pos.Z, false){
+		SpatialKey(const v3f &_pos, const u16 id) : SpatialKey(_pos.X / BS, _pos.Y / BS, _pos.Z / BS, false){
 			padding_or_optional_id = id;
 		}
 

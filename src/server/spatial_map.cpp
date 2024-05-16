@@ -95,15 +95,16 @@ void SpatialMap::getRelevantObjectIds(const aabb3f &box, const std::function<voi
 {
 	if(!m_cached.empty()) {
 		// when searching, we must round to maximum extent of relevant mapblock indexes
-		auto absoluteRoundUp = [](f32 val) {
-			//return val < 0 ? floor(val) : ceil(val);}
-			s16 rounded = std::lround(val);
-			s16 remainder = (rounded & 0xF) != 0; // same as (val % 16) != 0
-			return (rounded >> 4) + ((rounded < 0) ? -remainder : remainder); // divide by 16 and round "up" the remainder
+		auto low = [](f32 val) -> s16 {
+			return static_cast<s16>(val / BS) >> 4;
+		};
+		auto high = [](f32 val) -> s16 {
+			f32 _val = val / BS;
+			return (static_cast<s16>(_val) >> 4) + (fmod(_val, 16) != 0);
 		};
 
-		v3s16 min(absoluteRoundUp(box.MinEdge.X), absoluteRoundUp(box.MinEdge.Y), absoluteRoundUp(box.MinEdge.Z)),
-			max(absoluteRoundUp(box.MaxEdge.X), absoluteRoundUp(box.MaxEdge.Y), absoluteRoundUp(box.MaxEdge.Z));
+		v3s16 min(low(box.MinEdge.X), low(box.MinEdge.Y), low(box.MinEdge.Z)),
+			max(high(box.MaxEdge.X), high(box.MaxEdge.Y), high(box.MaxEdge.Z));
 		
 		// We should only iterate using this spatial map when there are at least 1 objects per mapblocks to check.
 		// Otherwise, might as well just iterate.
