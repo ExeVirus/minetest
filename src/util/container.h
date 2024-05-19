@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "exceptions.h"
 #include "threading/mutex_auto_lock.h"
 #include "threading/semaphore.h"
+#include "parallel_hashmap/btree.h"
 #include <list>
 #include <vector>
 #include <map>
@@ -534,8 +535,8 @@ protected:
 	};
 
 private:
-	std::map<K, V> m_values;
-	std::map<K, V> m_new;
+	phmap::btree_map<K, V> m_values;
+	phmap::btree_map<K, V> m_new;
 	unsigned int m_iterating = 0;
 	// approximate amount of null-placeholders in m_values, reliable for != 0 tests
 	size_t m_garbage = 0;
