@@ -97,65 +97,68 @@ void benchGetObjectsInArea(Catch::Benchmark::Chronometer &meter)
 	mgr.clear(); // implementation expects this
 }
 
-void benchPseudorandom(Catch::Benchmark::Chronometer &meter)
+void benchPseudorandom()
 {
 	server::ActiveObjectMgr mgr;
 	std::vector<ServerActiveObject*> result;
-	result.reserve(3000); // don't want mem resizing to be a factor in tests
+	std::vector<u16> ids;
+	result.reserve(200); // don't want mem resizing to be a factor in tests
 	mysrand(2010112); // keep the test identical for comparing perf changes
 
-	auto iterationManipulator = [&mgr] (ServerActiveObject *obj) -> bool {
-		if (obj == nullptr)	return false;
+	auto iterationManipulator = [&mgr, &ids] (ServerActiveObject *obj) -> bool {
+		//if (obj == nullptr)	return false;
 		int val = myrand_range(1, 80); // seldom, just remember this is an expensive callback
 		if( val == 1) {
-			mgr.removeObject(obj->getId());
-			return false;
+			if(mgr.getActiveObject(obj->getId()-2) != nullptr)
+				mgr.removeObject(obj->getId()-2);
 		} else if ( val == 2) {
 			fill(mgr, 1);
 		}
-		return true;
+		ids.push_back(obj->getId());
+		return false;
 	};
 
-	auto inArea = [&result, &iterationManipulator] (server::ActiveObjectMgr* mgr) {
-		result.clear();
+	auto inArea = [&ids, &result, &iterationManipulator] (server::ActiveObjectMgr* mgr) {
+		ids.clear();
 		v3f pos = randpos();
-		v3f off(50, 50, 50);
-		off[myrand_range(0, 2)] = 10;
+		v3f off(200, 50, 200);
 		mgr->getObjectsInArea({pos, pos + off}, result, iterationManipulator);
-		return result.size();
+		return ids.size();
 	};
 
-	auto inRadius = [&result, &iterationManipulator] (server::ActiveObjectMgr* mgr) {
-		result.clear();
-		mgr->getObjectsInsideRadius(randpos(), 30.0f, result, iterationManipulator);
-		return result.size();
+	auto inRadius = [&ids, &result, &iterationManipulator] (server::ActiveObjectMgr* mgr) {
+		ids.clear();
+		mgr->getObjectsInsideRadius(randpos(), 300.0f, result, iterationManipulator);
+		return ids.size();
 	};
 	
-	meter.measure([&] {
+	for (int i = 0; i < 100; i++) {
+		mgr.clear();
 		fill(mgr, 1000); // start with 1000 to keep things messy
 
 		// Psuedorandom object manipulations
 		// Note that the inArea and inRadius checks will manipulate the number of objects
 		for (int i = 0; i < 200; i++) {
-			switch(myrand_range(0,2)) {
-				case 0: // move three objects
-					//mgr.getActiveObject(1)->setBasePosition(randpos());
-					//mgr.getActiveObject(2)->setBasePosition(randpos());
-					//mgr.getActiveObject(3)->setBasePosition(randpos());
-					break;
-				case 1:
-					inArea(&mgr);
-					break;
-				default:
-					inRadius(&mgr);
+			switch (myrand_range(0, 2)) {
+			case 0:
+				for (auto id : ids) {
+					auto obj = mgr.getActiveObject(id);
+					if(obj != nullptr)
+						obj->setBasePosition(randpos());
+				}
+				break;
+			case 1:
+				inArea(&mgr);
+				break;
+			default:
+				inRadius(&mgr);
 			}
 		}
-		WARN("inArea  :" + std::to_string(inArea(&mgr)  )); // for validation against new implementations
-		WARN("inRadius:" + std::to_string(inRadius(&mgr)));
-		mgr.clear();
-	});
-
-	mgr.clear(); // implementation expects this
+		size_t count = 0;
+		mgr.getObjectsInsideRadius(v3f(0, 0, 0), 3000.0, result, [&count](ServerActiveObject* obj) { count++; return false; });
+		std::cerr << std::to_string(inArea(&mgr)) + ", " + std::to_string(inRadius(&mgr)) + ", " + std::to_string(count) << std::endl;
+	}
+	mgr.clear();
 }
 
 #define BENCH_INSIDE_RADIUS(_count) \
@@ -179,5 +182,5 @@ TEST_CASE("ActiveObjectMgr") {
 	//BENCH_IN_AREA(1450)
 	//BENCH_IN_AREA(10000)
 
-	BENCH_PSEUDORANDOM()
+	benchPseudorandom();
 }
