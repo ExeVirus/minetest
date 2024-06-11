@@ -5,6 +5,7 @@
 #include "server/activeobjectmgr.h"
 #include "util/numeric.h"
 #include <array>
+#include <chrono>
 
 namespace {
 
@@ -40,7 +41,6 @@ namespace {
 	{
 		for (size_t i = 0; i < n; i++) {
 			auto obj = std::make_unique<TestObject>(randpos());
-			auto pos = obj->getBasePosition();
 			bool ok = mgr.registerObject(std::move(obj));
 			REQUIRE(ok);
 		}
@@ -103,54 +103,76 @@ void benchPseudorandom()
 {
 	server::ActiveObjectMgr mgr;
 	std::vector<ServerActiveObject*> result;
+	int numToAdd = 0;
 	std::vector<u16> ids;
-	int iterationNum = 0;
+	bool debug = false;
+	int deleteEm = 0;
 	result.reserve(200); // don't want mem resizing to be a factor in tests
 	mysrand(2010112); // keep the test identical for comparing perf changes
 
-	auto iterationManipulator = [&mgr, &ids, &iterationNum](ServerActiveObject* obj) -> bool {
+	auto iterationManipulator = [&mgr, &ids, &deleteEm, &numToAdd](ServerActiveObject* obj) -> bool {
 		//if (obj == nullptr)	return false;
-		int val = myrand_range(1, 80); // seldom, just remember this is an expensive callback
-		if (val == 1) {
-			u16 id = myrand_range(iterationNum * 1000 + 1, iterationNum * 1000 + 1000);
-			if (mgr.getActiveObject(id) != nullptr) {
-				auto pos = mgr.getActiveObject(id)->getBasePosition();
-				std::cout << "delete(" << pos.X << "," << pos.Y << "," << pos.Z << ")" << std::endl;
-				mgr.removeObject(id);
+		//int val = myrand_range(1, 80); // seldom, just remember this is an expensive callback
+		if (deleteEm == 10) {
+			if (obj != nullptr) {
+				mgr.removeObject(obj->getId());
 			}
+			return false;
 		}
-		else if (val == 2) {
-			fill(mgr, 1);
-			std::cout << "add()" << std::endl;
+		else if (deleteEm == 20) {
+			numToAdd += 1;
+			//std::cout << "add()" << std::endl;
 		}
 		ids.push_back(obj->getId());
 		return false;
 		};
 
-	auto inArea = [&ids, &result, &iterationManipulator](server::ActiveObjectMgr* mgr) {
+	auto inArea = [&ids, &result, &iterationManipulator, &deleteEm, &debug](server::ActiveObjectMgr* mgr) {
 		ids.clear();
 		v3f pos = randpos();
 		v3f off(200, 50, 200);
+		deleteEm = myrand_range(1, 80);
 		mgr->getObjectsInArea({ pos, pos + off }, result, iterationManipulator);
+		//if (debug) {
+		//	std::cout << "::area::" << std::endl;
+		//	for (auto id : ids) {
+		//		auto obj = mgr->getActiveObject(id);
+		//		if (obj != nullptr) {
+		//			v3f& pos = obj->getBasePosition();
+		//			std::cout << obj->getId() << " : " << pos.X << "," << pos.Y << "," << pos.Z << std::endl;
+		//		}
+		//	}
+		//}
 		return ids.size();
 		};
-	auto inRadius = [&ids, &result, &iterationManipulator](server::ActiveObjectMgr* mgr) {
+	auto inRadius = [&ids, &result, &iterationManipulator, &deleteEm, &debug](server::ActiveObjectMgr* mgr) {
 		ids.clear();
 		v3f pos = randpos();
+		deleteEm = myrand_range(1, 80);
 		//std::cout << "pos(" << pos.X << "," << pos.Y << "," << pos.Z << ")" << std::endl;
 		mgr->getObjectsInsideRadius(pos, 300.0f, result, iterationManipulator);
+		//if (debug) {
+		//	std::cout << "::radius::" << std::endl;
+		//	for (auto id : ids) {
+		//		auto obj = mgr->getActiveObject(id);
+		//		if (obj != nullptr) {
+		//			v3f& pos = obj->getBasePosition();
+		//			std::cout << obj->getId() << " : " << pos.X << "," << pos.Y << "," << pos.Z << std::endl;
+		//		}
+		//	}
+		//}
 		return ids.size();
 		};
 
-	for (int i = 0; i < 15; i++) {
-		iterationNum = i;
+	for (int i = 0; i < 2; i++) {
 		mgr.clear();
-		fill(mgr, 1000); // start with 1000 to keep things messy
+		fill(mgr, 15000); // start with 1000 to keep things messy
 		//mgr.getObjectsInsideRadius(v3f(0, 0, 0), 3000.0, result, [](ServerActiveObject* obj) { std::cout << obj->getId() << std::endl; return false; });
 
 		// Psuedorandom object manipulations
 		// Note that the inArea and inRadius checks will manipulate the number of objects
-		for (int i = 0; i < 200; i++) {
+		auto start_time = std::chrono::high_resolution_clock::now();
+		for (int i = 0; i < 20000; i++) {
 			size_t var = 0;
 			switch (myrand_range(0, 2)) {
 			case 0:
@@ -161,6 +183,7 @@ void benchPseudorandom()
 						v3f newPos(obj->getBasePosition());
 						std::swap(newPos.X, newPos.Y);
 						std::swap(newPos.Y, newPos.Z);
+						obj->setBasePosition(newPos);
 					}
 				}
 				break;
@@ -170,19 +193,22 @@ void benchPseudorandom()
 				break;
 			default:
 				var = inRadius(&mgr);
-				//std::cout << "radius(" << var << ")" << std::endl;
-				//for (auto id : ids) {
-				//	auto obj = mgr.getActiveObject(id);
-				//	if (obj != nullptr) {
-				//		v3f& pos = obj->getBasePosition();
-				//		std::cout << pos.X << "," << pos.Y << "," << pos.Z << std::endl;
-				//	}
-				//}
+			}
+			if (numToAdd > 0) {
+				fill(mgr, numToAdd);
+				numToAdd = 0;
 			}
 		}
 		size_t count = 0;
-		mgr.getObjectsInsideRadius(v3f(0, 0, 0), 3000.0, result, [&count](ServerActiveObject* obj) { count++; return false; });
-		std::cerr << std::to_string(inArea(&mgr)) + ", " + std::to_string(inRadius(&mgr)) + ", " + std::to_string(count) << std::endl;
+		mgr.getObjectsInsideRadius(v3f(0, 0, 0), 3000.0, result, [&count, &ids](ServerActiveObject* obj) { count++; return false; });
+		auto end_time = std::chrono::high_resolution_clock::now();
+		auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
+		double elapsed_seconds = static_cast<double>(elapsed_ns.count()) / 1e9;
+		double elapsed_milliseconds = static_cast<double>(elapsed_ns.count()) / 1e6;
+		std::cout << "Elapsed time: " << elapsed_milliseconds << " milliseconds\n";
+		debug = true;
+		std::cout << std::to_string(inArea(&mgr)) + ", " + std::to_string(inRadius(&mgr)) + ", " + std::to_string(count) << std::endl;
+		debug = false;
 	}
 	mgr.clear();
 }
