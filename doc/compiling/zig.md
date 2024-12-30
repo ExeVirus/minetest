@@ -14,25 +14,25 @@
 
 ## Remaining things to get working:
 
-- SDL2
-- CURL
-- FREETYPE
-- GETTEXT
-- GMP
-- ICONV
-- JPEG
-- JSON
-- LEVELDB
-- PostgreSQL
-- REDIS
-- SPATIAL
-- LUA
-- OGG
-- OPENAL
-- PNG
-- PROMETHEUS_PULL
-- PROMETHEUS_CORE
-- SQLITE3
-- VORBISFILE
-- ZLIB
-- ZSTD
+- SDL2 - doable, cmake-based, check out vcpkg
+- CURL - follow vcpkg
+- FREETYPE, perhaps done: https://github.com/mitchellh/zig-build-freetype
+- GETTEXT, follow vcpkg
+- GMP, follow vcpkg
+- ICONV, follow vcpkg
+- JPEG, follow vcpkg
+- JSON, follow vcpkg
+- LEVELDB, follow vcpkg
+- PostgreSQL, follow vcpkg
+- REDIS, follow vcpkg
+- SPATIAL, follow vcpkg
+- LUA, follow vcpkg
+- OGG, follow vcpkg
+- OPENAL, follow vcpkg
+- PNG perhaps done: https://github.com/mitchellh/zig-build-libpng
+- PROMETHEUS_PULL, follow vcpkg
+- PROMETHEUS_CORE, follow vcpkg
+- SQLITE3, follow vcpkg
+- VORBISFILE, follow vcpkg
+- ZLIB - Doable, perhaps done: https://github.com/ExeVirus/zig-build-zlib
+- ZSTD, follow vcpkg
