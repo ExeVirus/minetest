@@ -3,7 +3,7 @@
 - [Compiling on GNU/Linux](linux.md)
 - [Compiling on Windows](windows.md)
 - [Compiling on MacOS](macos.md)
-
+- [Compiling with Zig](zig.md)
 
 ## CMake options
 
