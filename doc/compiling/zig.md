@@ -11,3 +11,28 @@
 3. Determine the options you would like to compile with
 4. Run `zig build`
 5. The resulting binary is in `bin/`
+
+## Remaining things to get working:
+
+- SDL2
+- CURL
+- FREETYPE
+- GETTEXT
+- GMP
+- ICONV
+- JPEG
+- JSON
+- LEVELDB
+- PostgreSQL
+- REDIS
+- SPATIAL
+- LUA
+- OGG
+- OPENAL
+- PNG
+- PROMETHEUS_PULL
+- PROMETHEUS_CORE
+- SQLITE3
+- VORBISFILE
+- ZLIB
+- ZSTD
